@@ -25,8 +25,15 @@
 #define BUFFER_SIZE 1024
 
 /**
- * @todo Add enum with return codes
+ * Exit codes
  */
+enum exitStatuses {
+    NO_ERROR,
+    INPUT_READ_ERROR,
+    FILE_READ_ERROR,
+    FILE_END,
+    CONVERSION_ERROR,
+};
 
 /**
  * Commands
@@ -71,19 +78,20 @@ void removeNewLine(char *str) {
 /**
  * Get count of the command repeats
  * @param command Command to cast
- * @return Count of the command repeats
+ * @param count Count of the command repeats
  */
-long int getRepeatsCount(command_t command) {
+int getRepeatsCount(command_t command, long int *count) {
     char *endptr;
     if ((strlen(command.args) == 0)) {
-        return 1;
+        *count = 1;
+        return NO_ERROR;
     }
-    long int count = strtol(command.args, &endptr, 10);
+    *count = strtol(command.args, &endptr, 10);
     if (*endptr != '\0') {
         fprintf(stderr, "Error in string conversion to int. String: %s\n", command.args);
-        return -1;
+        return CONVERSION_ERROR;
     }
-    return count;
+    return NO_ERROR;
 }
 
 /**
@@ -107,10 +115,10 @@ command_t createCommand(char *line) {
  */
 int readLine(char *inputBuffer) {
     if (fgets(inputBuffer, BUFFER_SIZE, stdin) == NULL) {
-        return 1;
+        return INPUT_READ_ERROR;
     }
     removeNewLine(inputBuffer);
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -135,7 +143,7 @@ int commandInject(command_t command, char *outputBuffer) {
     if (strlen(outputBuffer) == 0) {
         readLine(buffer);
         if (feof(stdin)) {
-            return -1;
+            return FILE_END;
         }
     } else {
         strcpy(buffer, outputBuffer);
@@ -150,7 +158,7 @@ int commandInject(command_t command, char *outputBuffer) {
         default:
             break;
     }
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -160,17 +168,17 @@ int commandInject(command_t command, char *outputBuffer) {
  * @return Execution status
  */
 int commandDelete(command_t command, char *inputBuffer) {
-    long int count = getRepeatsCount(command);
-    if (count == -1) {
-        return 1;
+    long int count;
+    if (getRepeatsCount(command, &count) == CONVERSION_ERROR) {
+        return CONVERSION_ERROR;
     }
     for (int i = 0; i < count; i++) {
         readLine(inputBuffer);
         if (feof(stdin)) {
-            return -1;
+            return FILE_END;
         }
     }
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -183,13 +191,13 @@ int commandDelete(command_t command, char *inputBuffer) {
 int commandInsert(command_t command, char *inputBuffer, char *outputBuffer) {
     readLine(inputBuffer);
     if (feof(stdin)) {
-        return -1;
+        return FILE_END;
     }
     puts(command.args);
     if (strcpy(outputBuffer, inputBuffer) == NULL) {
         return 1;
     }
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -199,15 +207,18 @@ int commandInsert(command_t command, char *inputBuffer, char *outputBuffer) {
  * @return Execution status
  */
 int commandGoto(command_t command, FILE *file) {
-    long int line = getRepeatsCount(command);
+    long int line;
+    if (getRepeatsCount(command, &line) == CONVERSION_ERROR) {
+        return CONVERSION_ERROR;
+    }
     char buffer[BUFFER_SIZE];
     rewind(file);
     for (int i = 1; i < line; i++) {
         if (fgets(buffer, BUFFER_SIZE - 1, file) == NULL) {
-            return 1;
+            return INPUT_READ_ERROR;
         }
     }
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -217,18 +228,18 @@ int commandGoto(command_t command, FILE *file) {
  * @return Execution status
  */
 int commandNext(command_t command, char *inputBuffer) {
-    long int count = getRepeatsCount(command);
-    if (count == -1) {
-        return 1;
+    long int count;
+    if (getRepeatsCount(command, &count) == CONVERSION_ERROR) {
+        return CONVERSION_ERROR;
     }
     for (int i = 0; i < count; i++) {
         readLine(inputBuffer);
         if (feof(stdin)) {
-            return -1;
+            return FILE_END;
         }
         puts(inputBuffer);
     }
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -240,13 +251,13 @@ int commandNext(command_t command, char *inputBuffer) {
 int commandRemove(char *inputBuffer, char *outputBuffer) {
     readLine(inputBuffer);
     if (feof(stdin)) {
-        return -1;
+        return FILE_END;
     }
     char buffer[BUFFER_SIZE];
     strcpy(buffer, outputBuffer);
     removeNewLine(buffer);
     sprintf(outputBuffer, "%s%s", buffer, inputBuffer);
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -286,26 +297,26 @@ int parseCommands(FILE *commandFile) {
                 status = commandGoto(command, commandFile);
                 break;
             case CMD_QUIT:
-                return 0;
+                return NO_ERROR;
             default:
                 fprintf(stderr, "Unknown command: %c.", command.cmd);
                 break;
         }
-        if (status == -1) {
-            return 0;
+        if (status == FILE_END) {
+            return NO_ERROR;
         }
-        if (status != 0) {
+        if (status != NO_ERROR) {
             return status;
         }
     }
     do {
         readLine(inputBuffer);
         if (feof(stdin)) {
-            return -1;
+            return FILE_END;
         }
         puts(inputBuffer);
     } while (!feof(stdin));
-    return 0;
+    return NO_ERROR;
 }
 
 /**
@@ -317,7 +328,7 @@ int parseCommandFile(char *argv[]) {
     FILE *commandFile;
     if ((commandFile = fopen(argv[1], "r")) == NULL) {
         perror("proj1");
-        return 1;
+        return FILE_READ_ERROR;
     }
     int output = parseCommands(commandFile);
     fclose(commandFile);
@@ -332,7 +343,7 @@ int printUsage() {
     puts("Usage: ./proj1 [options] file_with_commands");
     puts("Options:");
     puts("\t-h, --help\t\tPrints help (this message) and exit");
-    return 0;
+    return NO_ERROR;
 }
 
 /**
