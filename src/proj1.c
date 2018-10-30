@@ -17,7 +17,6 @@
  */
 
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,16 +55,17 @@ enum commands {
 };
 
 /**
- * @todo Add command for substitution
- */
-
-/**
  * Structure for commands
  */
 typedef struct {
     enum commands cmd;
     char args[BUFFER_SIZE - 1];
 } command_t;
+
+
+/**
+ * @todo Add command for substitution
+ */
 
 /**
  * Remove a new line from the string
@@ -141,6 +141,7 @@ void flushOutputBuffer(char *outputBuffer) {
  * @param command Command (append or before)
  * @param outputBuffer Output buffer
  * @return Execution status
+ * @todo Fix command's behavior (remove line reading, fix spaces in arguments)
  */
 int commandInject(command_t command, char *outputBuffer) {
     char buffer[BUFFER_SIZE];
@@ -188,7 +189,7 @@ int commandDelete(command_t command, char *inputBuffer) {
  * Add EOL after the current line
  * @param command Command
  * @param outputBuffer Output buffer
- * @return
+ * @return Execution status
  */
 int commandAddEol(char *outputBuffer) {
     if (strcat(outputBuffer, "\n") == NULL) {
@@ -304,7 +305,6 @@ int parseCommands(FILE *commandFile) {
                 status = commandDelete(command, inputBuffer);
                 break;
             case CMD_NEXT:
-                /** @todo Fix command's behavior */
                 flushOutputBuffer(outputBuffer);
                 status = commandNext(command, inputBuffer);
                 break;
@@ -329,7 +329,7 @@ int parseCommands(FILE *commandFile) {
         }
     }
     do {
-        int status = readLine(inputBuffer);
+        status = readLine(inputBuffer);
         if (status != NO_ERROR) {
             return status;
         }
@@ -365,12 +365,12 @@ int printUsage() {
     return NO_ERROR;
 }
 
-/**
- * Main program function
- * @param int argc Count of arguments
- * @param char** argv Program's arguments
- * @return Execution status
- */
+ /**
+  * Main program function
+  * @param argc Count of arguments
+  * @param argv Program's arguments
+  * @return Execution status
+  */
 int main(int argc, char *argv[]) {
     if ((argc != 2) || (strcmp(argv[1], "--help") == 0) || (strcmp(argv[1], "-h") == 0)) {
         return printUsage();
