@@ -118,6 +118,9 @@ int readLine(char *inputBuffer) {
         return INPUT_READ_ERROR;
     }
     removeNewLine(inputBuffer);
+    if (feof(stdin)) {
+        return FILE_END;
+    }
     return NO_ERROR;
 }
 
@@ -141,9 +144,9 @@ void flushOutputBuffer(char *outputBuffer) {
 int commandInject(command_t command, char *outputBuffer) {
     char buffer[BUFFER_SIZE];
     if (strlen(outputBuffer) == 0) {
-        readLine(buffer);
-        if (feof(stdin)) {
-            return FILE_END;
+        int status = readLine(buffer);
+        if (status != NO_ERROR) {
+            return status;
         }
     } else {
         strcpy(buffer, outputBuffer);
@@ -173,9 +176,9 @@ int commandDelete(command_t command, char *inputBuffer) {
         return CONVERSION_ERROR;
     }
     for (int i = 0; i < count; i++) {
-        readLine(inputBuffer);
-        if (feof(stdin)) {
-            return FILE_END;
+        int status = readLine(inputBuffer);
+        if (status != NO_ERROR) {
+            return status;
         }
     }
     return NO_ERROR;
@@ -189,9 +192,9 @@ int commandDelete(command_t command, char *inputBuffer) {
  * @return Execution status
  */
 int commandInsert(command_t command, char *inputBuffer, char *outputBuffer) {
-    readLine(inputBuffer);
-    if (feof(stdin)) {
-        return FILE_END;
+    int status = readLine(inputBuffer);
+    if (status != NO_ERROR) {
+        return status;
     }
     puts(command.args);
     if (strcpy(outputBuffer, inputBuffer) == NULL) {
@@ -233,9 +236,9 @@ int commandNext(command_t command, char *inputBuffer) {
         return CONVERSION_ERROR;
     }
     for (int i = 0; i < count; i++) {
-        readLine(inputBuffer);
-        if (feof(stdin)) {
-            return FILE_END;
+        int status = readLine(inputBuffer);
+        if (status != NO_ERROR) {
+            return status;
         }
         puts(inputBuffer);
     }
@@ -249,9 +252,9 @@ int commandNext(command_t command, char *inputBuffer) {
  * @return Execution status
  */
 int commandRemove(char *inputBuffer, char *outputBuffer) {
-    readLine(inputBuffer);
-    if (feof(stdin)) {
-        return FILE_END;
+    int status = readLine(inputBuffer);
+    if (status != NO_ERROR) {
+        return status;
     }
     char buffer[BUFFER_SIZE];
     strcpy(buffer, outputBuffer);
@@ -310,9 +313,9 @@ int parseCommands(FILE *commandFile) {
         }
     }
     do {
-        readLine(inputBuffer);
-        if (feof(stdin)) {
-            return FILE_END;
+        int status = readLine(inputBuffer);
+        if (status != NO_ERROR) {
+            return status;
         }
         puts(inputBuffer);
     } while (!feof(stdin));
