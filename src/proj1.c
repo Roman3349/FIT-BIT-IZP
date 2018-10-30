@@ -33,6 +33,7 @@ enum exitStatuses {
     FILE_READ_ERROR,
     FILE_END,
     CONVERSION_ERROR,
+    BUFFER_ERROR
 };
 
 /**
@@ -51,7 +52,7 @@ enum commands {
 //    CMD_SUBSTITUTE_ALL = 'S',
 //|  CMD_FIND = 'f',
 //|  CMD_CONDITIONED_GOTO = 'c',
-//|  CMD_EOL = 'e'
+    CMD_EOL = 'e'
 };
 
 /**
@@ -183,6 +184,18 @@ int commandDelete(command_t command, char *inputBuffer) {
     }
     return NO_ERROR;
 }
+/**
+ * Add EOL after the current line
+ * @param command Command
+ * @param outputBuffer Output buffer
+ * @return
+ */
+int commandAddEol(char *outputBuffer) {
+    if (strcat(outputBuffer, "\n") == NULL) {
+        return BUFFER_ERROR;
+    }
+    return NO_ERROR;
+}
 
 /**
  * Command for line insertion
@@ -301,6 +314,9 @@ int parseCommands(FILE *commandFile) {
                 break;
             case CMD_QUIT:
                 return NO_ERROR;
+            case CMD_EOL:
+                status = commandAddEol(outputBuffer);
+                break;
             default:
                 fprintf(stderr, "Unknown command: %c.", command.cmd);
                 break;
