@@ -17,6 +17,7 @@
  */
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,6 +67,15 @@ typedef struct {
 /**
  * @todo Add command for substitution
  */
+
+/**
+ * Chack if execution has error status
+ * @param status Execution status
+ * @return Has error status?
+ */
+bool checkStatus(int status) {
+    return (status != NO_ERROR && status != FILE_END);
+}
 
 /**
  * Remove a new line from the string
@@ -146,7 +156,7 @@ int commandInject(command_t command, char *outputBuffer) {
     char buffer[BUFFER_SIZE];
     if (strlen(outputBuffer) == 0) {
         int status = readLine(buffer);
-        if (status != NO_ERROR) {
+        if (checkStatus(status)) {
             return status;
         }
     } else {
@@ -180,7 +190,7 @@ int commandDelete(command_t command, char *inputBuffer) {
     }
     for (int i = 0; i < count; i++) {
         int status = readLine(inputBuffer);
-        if (status != NO_ERROR) {
+        if (checkStatus(status)) {
             return status;
         }
     }
@@ -202,19 +212,11 @@ int commandAddEol(char *outputBuffer) {
 /**
  * Command for line insertion
  * @param command Command
- * @param inputBuffer Input buffer
- * @param outputBuffer Output buffer
  * @return Execution status
+ * @todo Fix command's behavior (remove line reading)
  */
-int commandInsert(command_t command, char *inputBuffer, char *outputBuffer) {
-    int status = readLine(inputBuffer);
-    if (status != NO_ERROR) {
-        return status;
-    }
+int commandInsert(command_t command) {
     puts(command.args);
-    if (strcpy(outputBuffer, inputBuffer) == NULL) {
-        return BUFFER_ERROR;
-    }
     return NO_ERROR;
 }
 
@@ -253,7 +255,7 @@ int commandNext(command_t command, char *inputBuffer) {
     }
     for (int i = 0; i < count; i++) {
         int status = readLine(inputBuffer);
-        if (status != NO_ERROR) {
+        if (checkStatus(status)) {
             return status;
         }
         puts(inputBuffer);
@@ -269,7 +271,7 @@ int commandNext(command_t command, char *inputBuffer) {
  */
 int commandRemove(char *inputBuffer, char *outputBuffer) {
     int status = readLine(inputBuffer);
-    if (status != NO_ERROR) {
+    if (checkStatus(status)) {
         return status;
     }
     char buffer[BUFFER_SIZE];
@@ -299,7 +301,7 @@ int parseCommands(FILE *commandFile) {
                 status = commandInject(command, outputBuffer);
                 break;
             case CMD_INSERT:
-                status = commandInsert(command, inputBuffer, outputBuffer);
+                status = commandInsert(command);
                 break;
             case CMD_REMOVE:
                 status = commandRemove(inputBuffer, outputBuffer);
@@ -329,13 +331,13 @@ int parseCommands(FILE *commandFile) {
         if (status == FILE_END) {
             return NO_ERROR;
         }
-        if (status != NO_ERROR) {
+        if (checkStatus(status)) {
             return status;
         }
     }
     do {
         status = readLine(inputBuffer);
-        if (status != NO_ERROR) {
+        if (checkStatus(status)) {
             return status;
         }
         puts(inputBuffer);
