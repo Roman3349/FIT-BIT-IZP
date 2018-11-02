@@ -89,7 +89,7 @@ int getRepeatsCount(command_t command, long int *count) {
     }
     *count = strtol(command.args, &endptr, 10);
     if (*endptr != '\0') {
-        fprintf(stderr, "Error in string conversion to int. String: %s\n", command.args);
+        fprintf(stderr, "Error in string conversion to int.");
         return CONVERSION_ERROR;
     }
     return NO_ERROR;
@@ -101,11 +101,10 @@ int getRepeatsCount(command_t command, long int *count) {
  * @param command_t command Parsed command
  */
 command_t createCommand(char *line) {
-    char cmdBuffer;
     command_t command = {'\0', ""};
-    sscanf(line, " %c%s", &cmdBuffer, command.args);
+    command.cmd = line[0];
+    strcpy(command.args, &line[1]);
     removeNewLine(command.args);
-    command.cmd = cmdBuffer;
     return command;
 }
 
@@ -141,7 +140,7 @@ void flushOutputBuffer(char *outputBuffer) {
  * @param command Command (append or before)
  * @param outputBuffer Output buffer
  * @return Execution status
- * @todo Fix command's behavior (remove line reading, fix spaces in arguments)
+ * @todo Fix command's behavior (remove line reading)
  */
 int commandInject(command_t command, char *outputBuffer) {
     char buffer[BUFFER_SIZE];
@@ -151,7 +150,9 @@ int commandInject(command_t command, char *outputBuffer) {
             return status;
         }
     } else {
-        strcpy(buffer, outputBuffer);
+        if (strcpy(buffer, outputBuffer) == NULL) {
+            return BUFFER_ERROR;
+        }
     }
     switch (command.cmd) {
         case CMD_APPEND:
@@ -212,7 +213,7 @@ int commandInsert(command_t command, char *inputBuffer, char *outputBuffer) {
     }
     puts(command.args);
     if (strcpy(outputBuffer, inputBuffer) == NULL) {
-        return 1;
+        return BUFFER_ERROR;
     }
     return NO_ERROR;
 }
@@ -222,6 +223,7 @@ int commandInsert(command_t command, char *inputBuffer, char *outputBuffer) {
  * @param command Command
  * @param file File with commands
  * @return Execution status
+ * @todo Ošetřit zacyklení
  */
 int commandGoto(command_t command, FILE *file) {
     long int line;
@@ -271,7 +273,9 @@ int commandRemove(char *inputBuffer, char *outputBuffer) {
         return status;
     }
     char buffer[BUFFER_SIZE];
-    strcpy(buffer, outputBuffer);
+    if (strcpy(buffer, outputBuffer) == NULL) {
+        return BUFFER_ERROR;
+    }
     removeNewLine(buffer);
     sprintf(outputBuffer, "%s%s", buffer, inputBuffer);
     return NO_ERROR;
@@ -289,7 +293,7 @@ int parseCommands(FILE *commandFile) {
     int status = 0;
     while (fgets(commandBuffer, BUFFER_SIZE - 2, commandFile) != NULL) {
         command_t command = createCommand(commandBuffer);
-        switch ((int) command.cmd) {
+        switch (command.cmd) {
             case CMD_APPEND:
             case CMD_BEFORE:
                 status = commandInject(command, outputBuffer);
@@ -313,6 +317,7 @@ int parseCommands(FILE *commandFile) {
                 status = commandGoto(command, commandFile);
                 break;
             case CMD_QUIT:
+                flushOutputBuffer(outputBuffer);
                 return NO_ERROR;
             case CMD_EOL:
                 status = commandAddEol(outputBuffer);
