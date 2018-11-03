@@ -33,7 +33,8 @@ enum exitStatuses {
     FILE_READ_ERROR,
     FILE_END,
     CONVERSION_ERROR,
-    BUFFER_ERROR
+    BUFFER_ERROR,
+    UNKNOWN_COMMAND
 };
 
 /**
@@ -135,14 +136,36 @@ int readLine(char *inputBuffer) {
 }
 
 /**
- * Print string from zhe output buffer
- * @param outputBuffer Output buffer
+ * Command for line deletion
+ * @param command Command
+ * @return Execution status
  */
-void flushOutputBuffer(char *outputBuffer) {
-    if (strlen(outputBuffer) != 0) {
-        puts(outputBuffer);
-        outputBuffer[0] = '\0';
+int commandDelete(command_t command) {
+    long int count;
+    if (getRepeatsCount(command, &count) == CONVERSION_ERROR) {
+        return CONVERSION_ERROR;
     }
+    char inputBuffer[BUFFER_SIZE] = "";
+    for (int i = 0; i < count; i++) {
+        int status = readLine(inputBuffer);
+        if (checkStatus(status)) {
+            return status;
+        }
+    }
+    return NO_ERROR;
+}
+
+/**
+ * Add EOL after the current line
+ * @param command Command
+ * @param outputBuffer Output buffer
+ * @return Execution status
+ */
+int commandAddEol(char *outputBuffer) {
+    if (strcat(outputBuffer, "\n") == NULL) {
+        return BUFFER_ERROR;
+    }
+    return NO_ERROR;
 }
 
 /**
@@ -150,19 +173,11 @@ void flushOutputBuffer(char *outputBuffer) {
  * @param command Command (append or before)
  * @param outputBuffer Output buffer
  * @return Execution status
- * @todo Fix command's behavior (remove line reading)
  */
 int commandInject(command_t command, char *outputBuffer) {
     char buffer[BUFFER_SIZE];
-    if (strlen(outputBuffer) == 0) {
-        int status = readLine(buffer);
-        if (checkStatus(status)) {
-            return status;
-        }
-    } else {
-        if (strcpy(buffer, outputBuffer) == NULL) {
-            return BUFFER_ERROR;
-        }
+    if (strcpy(buffer, outputBuffer) == NULL) {
+        return BUFFER_ERROR;
     }
     switch (command.cmd) {
         case CMD_APPEND:
@@ -178,42 +193,9 @@ int commandInject(command_t command, char *outputBuffer) {
 }
 
 /**
- * Command for line deletion
- * @param command Command
- * @param inputBuffer Input buffer
- * @return Execution status
- */
-int commandDelete(command_t command, char *inputBuffer) {
-    long int count;
-    if (getRepeatsCount(command, &count) == CONVERSION_ERROR) {
-        return CONVERSION_ERROR;
-    }
-    for (int i = 0; i < count; i++) {
-        int status = readLine(inputBuffer);
-        if (checkStatus(status)) {
-            return status;
-        }
-    }
-    return NO_ERROR;
-}
-/**
- * Add EOL after the current line
- * @param command Command
- * @param outputBuffer Output buffer
- * @return Execution status
- */
-int commandAddEol(char *outputBuffer) {
-    if (strcat(outputBuffer, "\n") == NULL) {
-        return BUFFER_ERROR;
-    }
-    return NO_ERROR;
-}
-
-/**
  * Command for line insertion
  * @param command Command
  * @return Execution status
- * @todo Fix command's behavior (remove line reading)
  */
 int commandInsert(command_t command) {
     puts(command.args);
@@ -225,7 +207,7 @@ int commandInsert(command_t command) {
  * @param command Command
  * @param file File with commands
  * @return Execution status
- * @todo Ošetřit zacyklení
+ * @todo Add cycle detection
  */
 int commandGoto(command_t command, FILE *file) {
     long int line;
@@ -244,42 +226,30 @@ int commandGoto(command_t command, FILE *file) {
 
 /**
  * Command for line(s) printing
- * @param command Command
- * @param inputBuffer Input buffer
- * @return Execution status
- */
-int commandNext(command_t command, char *inputBuffer) {
+  * @param command Command
+  * @param beforeBuffer Before output buffer
+  * @param afterBuffer After output buffer
+  * @return Execution status
+  */
+int commandNext(command_t command, char *beforeBuffer, char *afterBuffer, bool* newLine) {
     long int count;
     if (getRepeatsCount(command, &count) == CONVERSION_ERROR) {
         return CONVERSION_ERROR;
     }
+    char inputBuffer[BUFFER_SIZE] = "";
     for (int i = 0; i < count; i++) {
         int status = readLine(inputBuffer);
         if (checkStatus(status)) {
             return status;
         }
-        puts(inputBuffer);
+        if (*newLine) {
+            commandAddEol(afterBuffer);
+        } else {
+            *newLine = true;
+        }
+        printf("%s%s%s", beforeBuffer, inputBuffer, afterBuffer);
+        afterBuffer[0] = beforeBuffer[0] = inputBuffer[0] = '\0';
     }
-    return NO_ERROR;
-}
-
-/**
- * Command to remove EOL from the current line
- * @param inputBuffer Input buffer
- * @param outputBuffer Output buffer
- * @return Execution status
- */
-int commandRemove(char *inputBuffer, char *outputBuffer) {
-    int status = readLine(inputBuffer);
-    if (checkStatus(status)) {
-        return status;
-    }
-    char buffer[BUFFER_SIZE];
-    if (strcpy(buffer, outputBuffer) == NULL) {
-        return BUFFER_ERROR;
-    }
-    removeNewLine(buffer);
-    sprintf(outputBuffer, "%s%s", buffer, inputBuffer);
     return NO_ERROR;
 }
 
@@ -290,51 +260,48 @@ int commandRemove(char *inputBuffer, char *outputBuffer) {
  */
 int parseCommands(FILE *commandFile) {
     char commandBuffer[BUFFER_SIZE] = "";
-    char inputBuffer[BUFFER_SIZE] = "";
-    char outputBuffer[2 * BUFFER_SIZE] = "";
+    char beforeBuffer[BUFFER_SIZE] = "";
+    char afterBuffer[BUFFER_SIZE] = "";
+    bool newLine = true;
     int status = 0;
     while (fgets(commandBuffer, BUFFER_SIZE - 2, commandFile) != NULL) {
         command_t command = createCommand(commandBuffer);
-        switch (command.cmd) {
+        switch ((int) command.cmd) {
             case CMD_APPEND:
+                status = commandInject(command, afterBuffer);
+                break;
             case CMD_BEFORE:
-                status = commandInject(command, outputBuffer);
+                status = commandInject(command, beforeBuffer);
                 break;
             case CMD_INSERT:
                 status = commandInsert(command);
                 break;
-            case CMD_REMOVE:
-                status = commandRemove(inputBuffer, outputBuffer);
-                break;
             case CMD_DELETE:
-                flushOutputBuffer(outputBuffer);
-                status = commandDelete(command, inputBuffer);
+                status = commandDelete(command);
+                break;
+            case CMD_REMOVE:
+                newLine = false;
                 break;
             case CMD_NEXT:
-                flushOutputBuffer(outputBuffer);
-                status = commandNext(command, inputBuffer);
+                status = commandNext(command, beforeBuffer, afterBuffer, &newLine);
                 break;
             case CMD_GOTO:
-                flushOutputBuffer(outputBuffer);
                 status = commandGoto(command, commandFile);
                 break;
-            case CMD_QUIT:
-                flushOutputBuffer(outputBuffer);
-                return NO_ERROR;
             case CMD_EOL:
-                status = commandAddEol(outputBuffer);
+                status = commandAddEol(afterBuffer);
                 break;
+            case CMD_QUIT:
+                return NO_ERROR;
             default:
-                fprintf(stderr, "Unknown command: %c.", command.cmd);
-                break;
-        }
-        if (status == FILE_END) {
-            return NO_ERROR;
+                fprintf(stderr, "Unknown command: %c.\n", command.cmd);
+                return UNKNOWN_COMMAND;
         }
         if (checkStatus(status)) {
             return status;
         }
     }
+    char inputBuffer[BUFFER_SIZE] = "";
     do {
         status = readLine(inputBuffer);
         if (checkStatus(status)) {
@@ -372,12 +339,12 @@ int printUsage() {
     return NO_ERROR;
 }
 
- /**
-  * Main program function
-  * @param argc Count of arguments
-  * @param argv Program's arguments
-  * @return Execution status
-  */
+/**
+ * Main program function
+ * @param argc Count of arguments
+ * @param argv Program's arguments
+ * @return Execution status
+ */
 int main(int argc, char *argv[]) {
     if ((argc != 2) || (strcmp(argv[1], "--help") == 0) || (strcmp(argv[1], "-h") == 0)) {
         return printUsage();
