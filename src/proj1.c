@@ -34,7 +34,8 @@ enum exitStatuses {
     FILE_END,
     CONVERSION_ERROR,
     BUFFER_ERROR,
-    UNKNOWN_COMMAND
+    UNKNOWN_COMMAND,
+    NOT_FOUND
 };
 
 /**
@@ -49,11 +50,11 @@ enum commands {
     CMD_NEXT = 'n',
     CMD_QUIT = 'q',
     CMD_GOTO = 'g',
-//    CMD_SUBSTITUTE = 's',
-//    CMD_SUBSTITUTE_ALL = 'S',
+    CMD_SUBSTITUTE = 's',
+    CMD_SUBSTITUTE_ALL = 'S',
+    CMD_EOL = 'e'
 //|  CMD_FIND = 'f',
 //|  CMD_CONDITIONED_GOTO = 'c',
-    CMD_EOL = 'e'
 };
 
 /**
@@ -64,9 +65,16 @@ typedef struct {
     char args[BUFFER_SIZE - 1];
 } command_t;
 
+/**
+ * Structure for substitution commands
+ */
+typedef struct {
+    int count;
+    command_t cmds[16];
+} substituteCmds_t;
 
 /**
- * @todo Add command for substitution
+ * @todo Add command for substitution all patterns
  */
 
 /**
@@ -75,7 +83,7 @@ typedef struct {
  * @return Has error status?
  */
 bool checkStatus(int status) {
-    return (status != NO_ERROR && status != FILE_END);
+    return (status != NO_ERROR);
 }
 
 /**
@@ -120,18 +128,90 @@ command_t createCommand(char *line) {
 }
 
 /**
+ * Replace string
+ * @param source Source string buffer
+ * @param pattern Pattern to replace
+ * @param replacement Replacement
+ * @return Execution status
+ */
+int strReplace(char* source, char* pattern, char* replacement) {
+    char tmpBuffer[BUFFER_SIZE];
+    char *p = strstr(source, pattern);
+    if (p == NULL) {
+        return NOT_FOUND;
+    }
+    unsigned long int rPos = p - source;
+    strncpy(tmpBuffer, source, rPos);
+    tmpBuffer[rPos] = '\0';
+    strcat(tmpBuffer, replacement);
+    strcat(tmpBuffer, p + strlen(pattern));
+    strcpy(source, tmpBuffer);
+    return NO_ERROR;
+}
+
+/**
  * Read line from stdin
  * @param inputBuffer Buffer for data from stdin
  * @return Execution status
  */
 int readLine(char *inputBuffer) {
     if (fgets(inputBuffer, BUFFER_SIZE, stdin) == NULL) {
+        if (feof(stdin)) {
+            return FILE_END;
+        }
         return INPUT_READ_ERROR;
     }
     removeNewLine(inputBuffer);
-    if (feof(stdin)) {
-        return FILE_END;
+    return NO_ERROR;
+}
+
+/**
+ * Add substitution command to the buffer
+ * @param command Substitution command
+ * @param substituteCmds Buffer with sunbstitution commands
+ * @return Execution status
+ */
+int addSubstituteCommand(command_t command, substituteCmds_t *substituteCmds) {
+    if (substituteCmds->count == 15) {
+        fprintf(stderr, "Too much command for substitution.\n");
+        return UNKNOWN_COMMAND;
     }
+    substituteCmds->cmds[substituteCmds->count] = command;
+    substituteCmds->count++;
+    return NO_ERROR;
+}
+
+/**
+ * Apply substitution command on the user's input
+ * @param commands Substitution commands
+ * @param buffer Buffer
+ * @return Execution status
+ */
+int applySubstitutionCommands(substituteCmds_t *commands, char *buffer) {
+    for (int i = 0; i < commands->count; i++) {
+        command_t cmd = commands->cmds[i];
+        char delimiter = cmd.args[0];
+        if (delimiter == '\0') {
+            break;
+        }
+        char pattern[BUFFER_SIZE] = "";
+        char replacement[BUFFER_SIZE] = "";
+        char tmpBuffer[BUFFER_SIZE] = "";
+        strcpy(tmpBuffer, &cmd.args[1]);
+        strncpy(pattern, tmpBuffer, strchr(tmpBuffer, delimiter) - tmpBuffer);
+        strcpy(replacement, strchr(tmpBuffer, delimiter)+1);
+        fprintf(stderr, "Pattern: \t%s\n", pattern);
+        fprintf(stderr, "Replacement: \t%s\n", replacement);
+        int replacementStatus = NO_ERROR;
+        if (cmd.cmd == CMD_SUBSTITUTE_ALL) {
+            while (replacementStatus == NO_ERROR){
+                replacementStatus = strReplace(buffer, pattern, replacement);
+            }
+        } else {
+            strReplace(buffer, pattern, replacement);
+        }
+    }
+    commands->count = 0;
     return NO_ERROR;
 }
 
@@ -231,12 +311,13 @@ int commandGoto(command_t command, FILE *file) {
   * @param afterBuffer After output buffer
   * @return Execution status
   */
-int commandNext(command_t command, char *beforeBuffer, char *afterBuffer, bool* newLine) {
+int commandNext(command_t command, char *beforeBuffer, char *afterBuffer, bool *newLine, substituteCmds_t *substituteCmds) {
     long int count;
     if (getRepeatsCount(command, &count) == CONVERSION_ERROR) {
         return CONVERSION_ERROR;
     }
     char inputBuffer[BUFFER_SIZE] = "";
+    char outputBuffer[4 * BUFFER_SIZE] = "";
     for (int i = 0; i < count; i++) {
         int status = readLine(inputBuffer);
         if (checkStatus(status)) {
@@ -247,8 +328,14 @@ int commandNext(command_t command, char *beforeBuffer, char *afterBuffer, bool* 
         } else {
             *newLine = true;
         }
-        printf("%s%s%s", beforeBuffer, inputBuffer, afterBuffer);
+        sprintf(outputBuffer, "%s%s%s", beforeBuffer, inputBuffer, afterBuffer);
         afterBuffer[0] = beforeBuffer[0] = inputBuffer[0] = '\0';
+        int substitutionStatus = applySubstitutionCommands(substituteCmds, outputBuffer);
+        if (substitutionStatus != NO_ERROR) {
+            break;
+        }
+        printf("%s", outputBuffer);
+        outputBuffer[0] = '\0';
     }
     return NO_ERROR;
 }
@@ -262,8 +349,11 @@ int parseCommands(FILE *commandFile) {
     char commandBuffer[BUFFER_SIZE] = "";
     char beforeBuffer[BUFFER_SIZE] = "";
     char afterBuffer[BUFFER_SIZE] = "";
+    // Dirty substitution command solution
+    substituteCmds_t substituteCmds;
+    substituteCmds.count = 0;
     bool newLine = true;
-    int status = 0;
+    int status = NO_ERROR;
     while (fgets(commandBuffer, BUFFER_SIZE - 2, commandFile) != NULL) {
         command_t command = createCommand(commandBuffer);
         switch ((int) command.cmd) {
@@ -283,13 +373,17 @@ int parseCommands(FILE *commandFile) {
                 newLine = false;
                 break;
             case CMD_NEXT:
-                status = commandNext(command, beforeBuffer, afterBuffer, &newLine);
+                status = commandNext(command, beforeBuffer, afterBuffer, &newLine, &substituteCmds);
                 break;
             case CMD_GOTO:
                 status = commandGoto(command, commandFile);
                 break;
             case CMD_EOL:
                 status = commandAddEol(afterBuffer);
+                break;
+            case CMD_SUBSTITUTE:
+            case CMD_SUBSTITUTE_ALL:
+                status = addSubstituteCommand(command, &substituteCmds);
                 break;
             case CMD_QUIT:
                 return NO_ERROR;
@@ -325,6 +419,9 @@ int parseCommandFile(char *argv[]) {
     }
     int output = parseCommands(commandFile);
     fclose(commandFile);
+    if (output == FILE_END) {
+        return NO_ERROR;
+    }
     return output;
 }
 
