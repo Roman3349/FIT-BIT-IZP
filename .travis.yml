@@ -12,10 +12,6 @@ jobs:
     - cmake --build .
     script:
     - cd proj1; bash runTests.sh
-
-
-jobs:
-  include:
   - stage: Second project
     before_script:
     - cmake .
