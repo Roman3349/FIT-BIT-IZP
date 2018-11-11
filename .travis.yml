@@ -1,0 +1,14 @@
+dist: xenial
+language: c
+
+compiler:
+- gcc
+
+jobs:
+  include:
+  - stage: First project
+    before_script:
+    - cmake .
+    - cmake --build .
+    script:
+    - cd proj1; bash runTests.sh
