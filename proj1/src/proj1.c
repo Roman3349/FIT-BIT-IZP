@@ -16,6 +16,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/*
+ * Autor: Roman Ondráček (login xondra58)
+ * Implementované volitelní příkazy:
+ *  - e (append EOL) přidej na konec aktuálního řádku znak konce řádku
+ */
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -23,6 +29,7 @@
 #include <string.h>
 
 #define BUFFER_SIZE 1024
+#define COMMAND_SIZE 16
 
 /**
  * Exit codes
@@ -53,8 +60,8 @@ enum commands {
     CMD_SUBSTITUTE = 's',
     CMD_SUBSTITUTE_ALL = 'S',
     CMD_EOL = 'e'
-//|  CMD_FIND = 'f',
-//|  CMD_CONDITIONED_GOTO = 'c',
+//  CMD_FIND = 'f',
+//  CMD_CONDITIONED_GOTO = 'c',
 };
 
 /**
@@ -70,12 +77,8 @@ typedef struct {
  */
 typedef struct {
     int count;
-    command_t cmds[16];
+    command_t cmds[COMMAND_SIZE];
 } substituteCmds_t;
-
-/**
- * @todo Add command for substitution all patterns
- */
 
 /**
  * Chack if execution has error status
@@ -134,7 +137,7 @@ command_t createCommand(char *line) {
  * @param replacement Replacement
  * @return Execution status
  */
-int strReplace(char* source, char* pattern, char* replacement) {
+int strReplace(char *source, char *pattern, char *replacement) {
     char tmpBuffer[BUFFER_SIZE];
     char *p = strstr(source, pattern);
     if (p == NULL) {
@@ -172,7 +175,7 @@ int readLine(char *inputBuffer) {
  * @return Execution status
  */
 int addSubstituteCommand(command_t command, substituteCmds_t *substituteCmds) {
-    if (substituteCmds->count == 15) {
+    if (substituteCmds->count == COMMAND_SIZE) {
         fprintf(stderr, "Too much command for substitution.\n");
         return UNKNOWN_COMMAND;
     }
@@ -199,12 +202,10 @@ int applySubstitutionCommands(substituteCmds_t *commands, char *buffer) {
         char tmpBuffer[BUFFER_SIZE] = "";
         strcpy(tmpBuffer, &cmd.args[1]);
         strncpy(pattern, tmpBuffer, strchr(tmpBuffer, delimiter) - tmpBuffer);
-        strcpy(replacement, strchr(tmpBuffer, delimiter)+1);
-        fprintf(stderr, "Pattern: \t%s\n", pattern);
-        fprintf(stderr, "Replacement: \t%s\n", replacement);
+        strcpy(replacement, strchr(tmpBuffer, delimiter) + 1);
         int replacementStatus = NO_ERROR;
         if (cmd.cmd == CMD_SUBSTITUTE_ALL) {
-            while (replacementStatus == NO_ERROR){
+            while (replacementStatus == NO_ERROR) {
                 replacementStatus = strReplace(buffer, pattern, replacement);
             }
         } else {
@@ -311,7 +312,8 @@ int commandGoto(command_t command, FILE *file) {
   * @param afterBuffer After output buffer
   * @return Execution status
   */
-int commandNext(command_t command, char *beforeBuffer, char *afterBuffer, bool *newLine, substituteCmds_t *substituteCmds) {
+int
+commandNext(command_t command, char *beforeBuffer, char *afterBuffer, bool *newLine, substituteCmds_t *substituteCmds) {
     long int count;
     if (getRepeatsCount(command, &count) == CONVERSION_ERROR) {
         return CONVERSION_ERROR;
@@ -356,7 +358,7 @@ int parseCommands(FILE *commandFile) {
     int status = NO_ERROR;
     while (fgets(commandBuffer, BUFFER_SIZE - 2, commandFile) != NULL) {
         command_t command = createCommand(commandBuffer);
-        switch ((int) command.cmd) {
+        switch (command.cmd) {
             case CMD_APPEND:
                 status = commandInject(command, afterBuffer);
                 break;
@@ -445,7 +447,6 @@ int printUsage() {
 int main(int argc, char *argv[]) {
     if ((argc != 2) || (strcmp(argv[1], "--help") == 0) || (strcmp(argv[1], "-h") == 0)) {
         return printUsage();
-    } else {
-        return parseCommandFile(argv);
     }
+    return parseCommandFile(argv);
 }
