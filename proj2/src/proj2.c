@@ -32,17 +32,49 @@ enum exitStatuses {
 /**
  * Converts string into double
  * @param string String to convert
- * @param integer Integer
+ * @param number Converted double
  * @return Execution status
  */
-int strToDouble(char *string, double *integer) {
+int strToDouble(char *string, double *number) {
     char *endptr;
-    *integer = strtod(string, &endptr);
+    *number = strtod(string, &endptr);
     if (*endptr != '\0') {
         fprintf(stderr, "Error in string conversion to double.");
         return CONVERSION_ERROR;
     }
     return NO_ERROR;
+}
+
+/**
+ * Converts string into unsigned integer
+ * @param string String to convert
+ * @param number Converted unsigned integer
+ * @return Execution status
+ */
+int strToUInt(char *string, unsigned int *number) {
+    char *endptr;
+    *number = (unsigned int) strtol(string, &endptr, 10);
+    if (*endptr != '\0') {
+        fprintf(stderr, "Error in string conversion to unsigned int.");
+        return CONVERSION_ERROR;
+    }
+    return NO_ERROR;
+}
+
+/**
+* Calculates the value of the exponential function of X
+* @param x Value whose exponential function is calculated
+* @param n Count of iterations
+* @return Value of the exponential function of X
+*/
+double calcExp(double x, unsigned long n) {
+    double fraction = 1;
+    double sum = fraction;
+    for (unsigned int i = 1; i <= n; i++) {
+        fraction *= x / i;
+        sum += fraction;
+    }
+    return sum;
 }
 
 /**
@@ -100,37 +132,25 @@ double taylor_log(double x, unsigned int n) {
 }
 
 /**
- * Calculates the value of the exponential function of Y with a base X
- * @param x Base of exponential function
- * @param y Value whose exponential function is calculated
+ * Calculates the value of the power function of Y with a base X
+ * @param x Base of power function
+ * @param y Value whose power function is calculated
  * @param n Count of iterations
- * @return Value of the exponential function of Y with a base X
+ * @return Value of the power function of Y with a base X
  */
 double taylor_pow(double x, double y, unsigned int n) {
-    double numerator = 1;
-    double sum = numerator;
-    for (unsigned int i = 1; i <= n; i++) {
-        numerator *= taylor_log(x, n) * y / i;
-        sum += numerator;
-    }
-    return sum;
+    return calcExp((taylor_log(x, n) * y), n);
 }
 
 /**
- * Calculates the value of the exponential function of Y with a base X
- * @param x Base of exponential function
- * @param y Value whose exponential function is calculated
+ * Calculates the value of the power function of Y with a base X
+ * @param x Base of power function
+ * @param y Value whose power function is calculated
  * @param n Count of iterations
- * @return Value of the exponential function of Y with a base X
+ * @return Value of the power function of Y with a base X
  */
 double taylorcf_pow(double x, double y, unsigned int n) {
-    double numerator = 1;
-    double sum = numerator;
-    for (unsigned int i = 1; i <= n; i++) {
-        numerator *= cfrac_log(x, n) * y / i;
-        sum += numerator;
-    }
-    return sum;
+    return calcExp((cfrac_log(x, n) * y), n);
 }
 
 /**
@@ -147,9 +167,9 @@ int printLog(double x, unsigned int n) {
 }
 
 /**
- * Prints calculated the value of the exponential function of Y with a base X
+ * Prints calculated the value of the power function of Y with a base X
  * @param x Base
- * @param y Value whose exponential function is calculated
+ * @param y Value whose power function is calculated
  * @param n Count of iterations
  * @return Execution status
  */
@@ -168,7 +188,7 @@ int printUsage() {
     puts("Usage: ./proj2 [options] [arguments]");
     puts("Options:");
     puts("\t--log X N\t\tCalculates the natural logarithm of X with N iterations");
-    puts("\t--pow X Y N\t\tCalculates the value of the exponential function of Y with a base X with N iterations");
+    puts("\t--pow X Y N\t\tCalculates the value of the power function of Y with a base X with N iterations");
     puts("\t-h, --help\t\tPrints help (this message) and exits");
     return NO_ERROR;
 }
@@ -180,16 +200,16 @@ int printUsage() {
  * @return Execution status
  */
 int main(int argc, char *argv[]) {
+    double x, y;
+    unsigned int n;
     if (argc == 4 && (strcmp(argv[1], "--log") == 0)) {
-        double x, n;
         strToDouble(argv[2], &x);
-        strToDouble(argv[3], &n);
+        strToUInt(argv[3], &n);
         return printLog(x, n);
     } else if (argc == 5 && (strcmp(argv[1], "--pow") == 0)) {
-        double x, y, n;
         strToDouble(argv[2], &x);
         strToDouble(argv[3], &y);
-        strToDouble(argv[4], &n);
+        strToUInt(argv[4], &n);
         return printPow(x, y, n);
     }
     return printUsage();
