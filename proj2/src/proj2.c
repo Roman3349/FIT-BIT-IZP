@@ -83,20 +83,20 @@ double taylor_log(double x, unsigned int n) {
     if (x == 0) {
         return -INFINITY;
     }
-    double t = 1;
-    double s = 0;
+    double numerator = 1;
+    double sum = 0;
     if (x < 1) {
         for (unsigned int i = 1; i <= n; i++) {
-            t *= (1 - x) / i;
-            s -= t;
+            numerator *= (1 - x);
+            sum -= numerator / i;
         }
     } else {
         for (unsigned int i = 1; i <= n; i++) {
-            t *= (x - 1) / (x * i);
-            s += t;
+            numerator *= (x - 1) / x;
+            sum += numerator / i;
         }
     }
-    return s;
+    return sum;
 }
 
 /**
@@ -107,13 +107,13 @@ double taylor_log(double x, unsigned int n) {
  * @return Value of the exponential function of Y with a base X
  */
 double taylor_pow(double x, double y, unsigned int n) {
-    double t = 1;
-    double s = t;
+    double numerator = 1;
+    double sum = numerator;
     for (unsigned int i = 1; i <= n; i++) {
-        t *= taylor_log(x, n) * y / i;
-        s += t;
+        numerator *= taylor_log(x, n) * y / i;
+        sum += numerator;
     }
-    return s;
+    return sum;
 }
 
 /**
@@ -124,13 +124,13 @@ double taylor_pow(double x, double y, unsigned int n) {
  * @return Value of the exponential function of Y with a base X
  */
 double taylorcf_pow(double x, double y, unsigned int n) {
-    double t = 1;
-    double s = t;
+    double numerator = 1;
+    double sum = numerator;
     for (unsigned int i = 1; i <= n; i++) {
-        t *= cfrac_log(x, n) * y / i;
-        s += t;
+        numerator *= cfrac_log(x, n) * y / i;
+        sum += numerator;
     }
-    return s;
+    return sum;
 }
 
 /**
