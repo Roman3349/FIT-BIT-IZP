@@ -52,19 +52,22 @@ int strToDouble(char *string, double *integer) {
  * @return Natural logarithm
  */
 double cfrac_log(double x, unsigned int n) {
-    if (x <= 0) {
+    if (x < 0) {
         return NAN;
     }
-    double cf = 0.0;
+    if (x == 0) {
+        return -INFINITY;
+    }
+    double cf = 0;
     double a, b;
-    double z = (x - 1.0) / (x + 1.0);
+    double z = (x - 1) / (x + 1);
     for (; n >= 1; n--) {
-        a = (2.0 * n - 1.0);
-        b = (n - 1.0) * z;
+        a = (2 * n) + 1;
+        b = n * z;
         b *= b;
         cf = b / (a - cf);
     }
-    return ((2.0 * z) / 1.0 - cf);
+    return ((2 * z) / (1 - cf));
 }
 
 /**
@@ -74,19 +77,22 @@ double cfrac_log(double x, unsigned int n) {
  * @return Natural logarithm
  */
 double taylor_log(double x, unsigned int n) {
-    double t = 1.0;
-    double s = 0.0;
-    if (x <= 0) {
+    if (x < 0) {
         return NAN;
     }
-    if (0 < x && x < 1) {
+    if (x == 0) {
+        return -INFINITY;
+    }
+    double t = 1;
+    double s = 0;
+    if (x < 1) {
         for (unsigned int i = 1; i <= n; i++) {
-            t *= 1.0 - x;
-            s -= t / i;
+            t *= (1 - x) / i;
+            s -= t;
         }
     } else {
         for (unsigned int i = 1; i <= n; i++) {
-            t *= (x - 1.0) / (x * i);
+            t *= (x - 1) / (x * i);
             s += t;
         }
     }
@@ -101,7 +107,7 @@ double taylor_log(double x, unsigned int n) {
  * @return Value of the exponential function of Y with a base X
  */
 double taylor_pow(double x, double y, unsigned int n) {
-    double t = 1.0;
+    double t = 1;
     double s = t;
     for (unsigned int i = 1; i <= n; i++) {
         t *= taylor_log(x, n) * y / i;
@@ -118,7 +124,7 @@ double taylor_pow(double x, double y, unsigned int n) {
  * @return Value of the exponential function of Y with a base X
  */
 double taylorcf_pow(double x, double y, unsigned int n) {
-    double t = 1.0;
+    double t = 1;
     double s = t;
     for (unsigned int i = 1; i <= n; i++) {
         t *= cfrac_log(x, n) * y / i;
