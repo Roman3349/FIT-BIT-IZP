@@ -154,6 +154,57 @@ double taylorcf_pow(double x, double y, unsigned int n) {
 }
 
 /**
+ * Calculates the natural logarithm via a continued fraction
+ * @param x Value whose logarithm is calculated
+ * @return Natural logarithm
+ */
+double mylog(double x) {
+    if (x < 0) {
+        return NAN;
+    }
+    if (x == 0) {
+        return -INFINITY;
+    }
+    double numerator = 1;
+    double sum = 0;
+    double eps = 1e-8;
+    unsigned long i = 1;
+    if (x < 1) {
+        while (fabs(numerator / i) > eps) {
+            numerator *= (1 - x);
+            sum -= numerator / i;
+            i++;
+        }
+    } else {
+        while (fabs(numerator / i) > eps) {
+            numerator *= (x - 1) / x;
+            sum += numerator / i;
+            i++;
+        }
+    }
+    return sum;
+}
+
+/**
+ * Calculates the value of the power function of Y with a base X
+ * @param x Base of power function
+ * @param y Value whose power function is calculated
+ * @return Value of the power function of Y with a base X
+ */
+double mypow(double x, double y) {
+    double fraction = 1;
+    double sum = fraction;
+    double eps = 1e-8;
+    unsigned long i = 1;
+    while (fabs(fraction) > eps) {
+        fraction *= mylog(x) * y / i;
+        sum += fraction;
+        i++;
+    }
+    return sum;
+}
+
+/**
  * Prints calculated the natural logarithm
  * @param x Value whose logarithm is calculated
  * @param n Count of iterations
@@ -161,6 +212,7 @@ double taylorcf_pow(double x, double y, unsigned int n) {
  */
 int printLog(double x, unsigned int n) {
     printf("       log(%g) = %.12g\n", x, log(x));
+//    printf("     mylog(%g) = %.7g\n", x, mylog(x));
     printf(" cfrac_log(%g) = %.12g\n", x, cfrac_log(x, n));
     printf("taylor_log(%g) = %.12g\n", x, taylor_log(x, n));
     return NO_ERROR;
@@ -175,6 +227,7 @@ int printLog(double x, unsigned int n) {
  */
 int printPow(double x, double y, unsigned int n) {
     printf("         pow(%g,%g) = %.12g\n", x, y, pow(x, y));
+//    printf("       mypow(%g,%g) = %.7g\n", x, y, mypow(x, y));
     printf("  taylor_pow(%g,%g) = %.12g\n", x, y, taylor_pow(x, y, n));
     printf("taylorcf_pow(%g,%g) = %.12g\n", x, y, taylorcf_pow(x, y, n));
     return NO_ERROR;
