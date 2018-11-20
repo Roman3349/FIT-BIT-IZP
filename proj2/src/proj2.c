@@ -70,7 +70,7 @@ int strToUInt(char *string, unsigned int *number) {
 double calcExp(double x, unsigned long n) {
     double fraction = 1;
     double sum = fraction;
-    for (unsigned int i = 1; i <= n; i++) {
+    for (unsigned int i = 1; i < n; i++) {
         fraction *= x / i;
         sum += fraction;
     }
@@ -93,7 +93,7 @@ double cfrac_log(double x, unsigned int n) {
     double cf = 0;
     double a, b;
     double z = (x - 1) / (x + 1);
-    for (; n >= 1; n--) {
+    for (--n; n >= 1; n--) {
         a = (2 * n) + 1;
         b = n * z;
         b *= b;
@@ -219,6 +219,17 @@ int printLog(double x, unsigned int n) {
 }
 
 /**
+ * Prints calculated the natural logarithm
+ * @param x Value whose logarithm is calculated
+ * @return Execution status
+ */
+int printMyLog(double x) {
+    printf("  log(%g) = %.12g\n", x, log(x));
+    printf("mylog(%g) = %.7g\n", x, mylog(x));
+    return NO_ERROR;
+}
+
+/**
  * Prints calculated the value of the power function of Y with a base X
  * @param x Base
  * @param y Value whose power function is calculated
@@ -234,6 +245,18 @@ int printPow(double x, double y, unsigned int n) {
 }
 
 /**
+ * Prints calculated the value of the power function of Y with a base X
+ * @param x Base
+ * @param y Value whose power function is calculated
+ * @return Execution status
+ */
+int printMyPow(double x, double y) {
+    printf("  pow(%g,%g) = %.12g\n", x, y, pow(x, y));
+    printf("mypow(%g,%g) = %.7g\n", x, y, mypow(x, y));
+    return NO_ERROR;
+}
+
+/**
  * Prints program's usage
  * @return Execution status
  */
@@ -241,6 +264,8 @@ int printUsage() {
     puts("Usage: ./proj2 [options] [arguments]");
     puts("Options:");
     puts("\t--log X N\t\tCalculates the natural logarithm of X with N iterations");
+    puts("\t--mylog X\t\tCalculates the natural logarithm of X");
+    puts("\t--mypow X Y\t\tCalculates the value of the power function of Y with a base X");
     puts("\t--pow X Y N\t\tCalculates the value of the power function of Y with a base X with N iterations");
     puts("\t-h, --help\t\tPrints help (this message) and exits");
     return NO_ERROR;
@@ -259,11 +284,18 @@ int main(int argc, char *argv[]) {
         strToDouble(argv[2], &x);
         strToUInt(argv[3], &n);
         return printLog(x, n);
+    } else if (argc == 3 && (strcmp(argv[1], "--mylog") == 0)) {
+        strToDouble(argv[2], &x);
+        return printMyLog(x);
     } else if (argc == 5 && (strcmp(argv[1], "--pow") == 0)) {
         strToDouble(argv[2], &x);
         strToDouble(argv[3], &y);
         strToUInt(argv[4], &n);
         return printPow(x, y, n);
+    } else if (argc == 4 && (strcmp(argv[1], "--mypow") == 0)) {
+        strToDouble(argv[2], &x);
+        strToDouble(argv[3], &y);
+        return printMyPow(x, y);
     }
     return printUsage();
 }
