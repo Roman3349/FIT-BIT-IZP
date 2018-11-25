@@ -17,6 +17,7 @@
  */
 
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,10 +71,25 @@ int strToUInt(char *string, unsigned int *number) {
  * @return Value of the power function of Y with a base X
  */
 double calcExp(double (*f)(double, unsigned int), double x, double y, unsigned int n) {
+    if (x == 0) {
+        if (y == -INFINITY) {
+            return INFINITY;
+        } else if (y == 0) {
+            return NAN;
+        }
+        return 0;
+    }
+    if (y == -INFINITY) {
+        return 0;
+    } else if (y == 0) {
+        return 1;
+    } else if (y == INFINITY) {
+        return INFINITY;
+    }
     double fraction = 1;
     double sum = fraction;
     for (unsigned int i = 1; i < n; i++) {
-        fraction *= ((*f)(x, n) * y) / i;
+        fraction *= ((*f)(fabs(x), n) * y) / i;
         sum += fraction;
     }
     return sum;
