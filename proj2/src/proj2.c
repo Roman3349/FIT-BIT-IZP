@@ -39,7 +39,7 @@ int strToDouble(char *string, double *number) {
     char *endptr;
     *number = strtod(string, &endptr);
     if (*endptr != '\0') {
-        fprintf(stderr, "Error in string conversion to double.");
+        fprintf(stderr, "Error in string conversion to double.\n");
         return CONVERSION_ERROR;
     }
     return NO_ERROR;
@@ -53,28 +53,48 @@ int strToDouble(char *string, double *number) {
  */
 int strToUInt(char *string, unsigned int *number) {
     char *endptr;
-    *number = (unsigned int) strtol(string, &endptr, 10);
+    *number = (unsigned int) strtoul(string, &endptr, 10);
     if (*endptr != '\0') {
-        fprintf(stderr, "Error in string conversion to unsigned int.");
+        fprintf(stderr, "Error in string conversion to unsigned int.\n");
         return CONVERSION_ERROR;
     }
     return NO_ERROR;
 }
 
 /**
-* Calculates the value of the exponential function of X
-* @param x Value whose exponential function is calculated
-* @param n Count of iterations
-* @return Value of the exponential function of X
-*/
-double calcExp(double x, unsigned long n) {
+ * Calculates the value of the power function of Y with a base X
+ * @param f Function for natural logarithm calculation
+ * @param x Base of power function
+ * @param y Value whose power function is calculated
+ * @param n Count of iterations
+ * @return Value of the power function of Y with a base X
+ */
+double calcExp(double (*f)(double, unsigned int), double x, double y, unsigned int n) {
     double fraction = 1;
     double sum = fraction;
     for (unsigned int i = 1; i < n; i++) {
-        fraction *= x / i;
+        fraction *= ((*f)(x, n) * y) / i;
         sum += fraction;
     }
     return sum;
+}
+
+/**
+ * Check if value is valid for natural logarithm calculation
+ * @param x Value whose logarithm is calculated
+ * @return Value whose logarithm is calculated
+ */
+double checkLog(double x) {
+    if (x < 0) {
+        return NAN;
+    }
+    if (x == 0) {
+        return -INFINITY;
+    }
+    if (x == INFINITY) {
+        return INFINITY;
+    }
+    return x;
 }
 
 /**
@@ -84,11 +104,9 @@ double calcExp(double x, unsigned long n) {
  * @return Natural logarithm
  */
 double cfrac_log(double x, unsigned int n) {
-    if (x < 0) {
-        return NAN;
-    }
-    if (x == 0) {
-        return -INFINITY;
+    double i = checkLog(x);
+    if (isnan(i) || isinf(i)) {
+        return i;
     }
     double cf = 0;
     double a, b;
@@ -109,11 +127,9 @@ double cfrac_log(double x, unsigned int n) {
  * @return Natural logarithm
  */
 double taylor_log(double x, unsigned int n) {
-    if (x < 0) {
-        return NAN;
-    }
-    if (x == 0) {
-        return -INFINITY;
+    double z = checkLog(x);
+    if (isnan(z) || isinf(z)) {
+        return z;
     }
     double numerator = 1;
     double sum = 0;
@@ -139,7 +155,7 @@ double taylor_log(double x, unsigned int n) {
  * @return Value of the power function of Y with a base X
  */
 double taylor_pow(double x, double y, unsigned int n) {
-    return calcExp((taylor_log(x, n) * y), n);
+    return calcExp(taylor_log, x, y, n);
 }
 
 /**
@@ -150,58 +166,7 @@ double taylor_pow(double x, double y, unsigned int n) {
  * @return Value of the power function of Y with a base X
  */
 double taylorcf_pow(double x, double y, unsigned int n) {
-    return calcExp((cfrac_log(x, n) * y), n);
-}
-
-/**
- * Calculates the natural logarithm via a continued fraction
- * @param x Value whose logarithm is calculated
- * @return Natural logarithm
- */
-double mylog(double x) {
-    if (x < 0) {
-        return NAN;
-    }
-    if (x == 0) {
-        return -INFINITY;
-    }
-    double numerator = 1;
-    double sum = 0;
-    double eps = 1e-8;
-    unsigned long i = 1;
-    if (x < 1) {
-        while (fabs(numerator / i) > eps) {
-            numerator *= (1 - x);
-            sum -= numerator / i;
-            i++;
-        }
-    } else {
-        while (fabs(numerator / i) > eps) {
-            numerator *= (x - 1) / x;
-            sum += numerator / i;
-            i++;
-        }
-    }
-    return sum;
-}
-
-/**
- * Calculates the value of the power function of Y with a base X
- * @param x Base of power function
- * @param y Value whose power function is calculated
- * @return Value of the power function of Y with a base X
- */
-double mypow(double x, double y) {
-    double fraction = 1;
-    double sum = fraction;
-    double eps = 1e-8;
-    unsigned long i = 1;
-    while (fabs(fraction) > eps) {
-        fraction *= mylog(x) * y / i;
-        sum += fraction;
-        i++;
-    }
-    return sum;
+    return calcExp(cfrac_log, x, y, n);
 }
 
 /**
@@ -212,20 +177,8 @@ double mypow(double x, double y) {
  */
 int printLog(double x, unsigned int n) {
     printf("       log(%g) = %.12g\n", x, log(x));
-//    printf("     mylog(%g) = %.7g\n", x, mylog(x));
     printf(" cfrac_log(%g) = %.12g\n", x, cfrac_log(x, n));
     printf("taylor_log(%g) = %.12g\n", x, taylor_log(x, n));
-    return NO_ERROR;
-}
-
-/**
- * Prints calculated the natural logarithm
- * @param x Value whose logarithm is calculated
- * @return Execution status
- */
-int printMyLog(double x) {
-    printf("  log(%g) = %.12g\n", x, log(x));
-    printf("mylog(%g) = %.7g\n", x, mylog(x));
     return NO_ERROR;
 }
 
@@ -238,21 +191,8 @@ int printMyLog(double x) {
  */
 int printPow(double x, double y, unsigned int n) {
     printf("         pow(%g,%g) = %.12g\n", x, y, pow(x, y));
-//    printf("       mypow(%g,%g) = %.7g\n", x, y, mypow(x, y));
     printf("  taylor_pow(%g,%g) = %.12g\n", x, y, taylor_pow(x, y, n));
     printf("taylorcf_pow(%g,%g) = %.12g\n", x, y, taylorcf_pow(x, y, n));
-    return NO_ERROR;
-}
-
-/**
- * Prints calculated the value of the power function of Y with a base X
- * @param x Base
- * @param y Value whose power function is calculated
- * @return Execution status
- */
-int printMyPow(double x, double y) {
-    printf("  pow(%g,%g) = %.12g\n", x, y, pow(x, y));
-    printf("mypow(%g,%g) = %.7g\n", x, y, mypow(x, y));
     return NO_ERROR;
 }
 
@@ -264,8 +204,6 @@ int printUsage() {
     puts("Usage: ./proj2 [options] [arguments]");
     puts("Options:");
     puts("\t--log X N\t\tCalculates the natural logarithm of X with N iterations");
-    puts("\t--mylog X\t\tCalculates the natural logarithm of X");
-    puts("\t--mypow X Y\t\tCalculates the value of the power function of Y with a base X");
     puts("\t--pow X Y N\t\tCalculates the value of the power function of Y with a base X with N iterations");
     puts("\t-h, --help\t\tPrints help (this message) and exits");
     return NO_ERROR;
@@ -284,18 +222,11 @@ int main(int argc, char *argv[]) {
         strToDouble(argv[2], &x);
         strToUInt(argv[3], &n);
         return printLog(x, n);
-    } else if (argc == 3 && (strcmp(argv[1], "--mylog") == 0)) {
-        strToDouble(argv[2], &x);
-        return printMyLog(x);
     } else if (argc == 5 && (strcmp(argv[1], "--pow") == 0)) {
         strToDouble(argv[2], &x);
         strToDouble(argv[3], &y);
         strToUInt(argv[4], &n);
         return printPow(x, y, n);
-    } else if (argc == 4 && (strcmp(argv[1], "--mypow") == 0)) {
-        strToDouble(argv[2], &x);
-        strToDouble(argv[3], &y);
-        return printMyPow(x, y);
     }
     return printUsage();
 }
