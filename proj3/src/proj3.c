@@ -39,108 +39,127 @@
 
 #endif
 
-/*****************************************************************
- * Deklarace potrebnych datovych typu:
- *
- * TYTO DEKLARACE NEMENTE
- *
- *   struct obj_t - struktura objektu: identifikator a souradnice
- *   struct cluster_t - shluk objektu:
- *      pocet objektu ve shluku,
- *      kapacita shluku (pocet objektu, pro ktere je rezervovano
- *          misto v poli),
- *      ukazatel na pole shluku.
+/**
+ * Struktura objektu
  */
-
 struct obj_t {
+    /// Identifikátor objektu
     int id;
+    /// Souřadnice - x
     float x;
+    /// Souřadnice - y
     float y;
 };
 
+/**
+ * Struktura shluku
+ */
 struct cluster_t {
+    /// Počet objektů ve shluku
     int size;
+    /// Kapacita shluku
     int capacity;
+    /// Ukazatel na pole shluků
     struct obj_t *obj;
 };
 
-/*****************************************************************
- * Deklarace potrebnych funkci.
- *
- * PROTOTYPY FUNKCI NEMENTE
- *
- * IMPLEMENTUJTE POUZE FUNKCE NA MISTECH OZNACENYCH 'TODO'
- *
+/**
+ * Inicializace shluku
+ * Alokuje paměť pro počet objektů.
+ * @param c Shluk
+ * @param cap Kapacita pole
  */
-
-/*
- Inicializace shluku 'c'. Alokuje pamet pro cap objektu (kapacitu).
- Ukazatel NULL u pole objektu znamena kapacitu 0.
-*/
 void init_cluster(struct cluster_t *c, int cap) {
     assert(c != NULL);
     assert(cap >= 0);
-
-    // TODO
+    size_t clusterSize = sizeof(struct obj_t) * cap;
+    c->obj = malloc(clusterSize);
+    if (c->obj == NULL) {
+        return;
+    }
+    c->size = 0;
+    c->capacity = cap;
 
 }
 
-/*
- Odstraneni vsech objektu shluku a inicializace na prazdny shluk.
+/**
+ * Odstranění všech objektů shluku a inicializace na prázdný shluk
+ * @param c Shluk
  */
 void clear_cluster(struct cluster_t *c) {
-    // TODO
+    if (c != NULL && c->obj != NULL) {
+        free(c->obj);
+        c->obj = NULL;
+    }
+    c->capacity = c->size = 0;
 }
 
 /// Chunk of cluster objects. Value recommended for reallocation.
 const int CLUSTER_CHUNK = 10;
 
-/*
- Zmena kapacity shluku 'c' na kapacitu 'new_cap'.
+/**
+ * Změna kapacity shluku
+ * @param c Shluk
+ * @param new_cap Nová kapacita shluku
+ * @return Shluk
  */
 struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap) {
-    // TUTO FUNKCI NEMENTE
     assert(c);
     assert(c->capacity >= 0);
     assert(new_cap >= 0);
 
-    if (c->capacity >= new_cap)
+    if (c->capacity >= new_cap) {
         return c;
-
+    }
     size_t size = sizeof(struct obj_t) * new_cap;
 
     void *arr = realloc(c->obj, size);
-    if (arr == NULL)
+    if (arr == NULL) {
         return NULL;
-
+    }
     c->obj = (struct obj_t *) arr;
     c->capacity = new_cap;
     return c;
 }
 
-/*
- Prida objekt 'obj' na konec shluku 'c'. Rozsiri shluk, pokud se do nej objekt
- nevejde.
+/**
+ * Přidá objekt na konec shluku
+ * Rozšíří shluk, pokud se do něj objekt nevejde.
+ * @param c Shluk
+ * @param obj Objekt, který chceme do shluku přidat
  */
 void append_cluster(struct cluster_t *c, struct obj_t obj) {
-    // TODO
+    if (c->size == c->capacity) {
+        resize_cluster(c, c->capacity + CLUSTER_CHUNK);
+    } else if (c->size < c->capacity) {
+        c->obj[c->size] = obj;
+        c->size++;
+    }
 }
 
-/*
- Seradi objekty ve shluku 'c' vzestupne podle jejich identifikacniho cisla.
+/**
+ * Seřadí vzestupně objekty ve shluku podle jejich ID
+ * @param c Shluk
  */
 void sort_cluster(struct cluster_t *c);
 
-/*
- Do shluku 'c1' prida objekty 'c2'. Shluk 'c1' bude v pripade nutnosti rozsiren.
- Objekty ve shluku 'c1' budou serazeny vzestupne podle identifikacniho cisla.
- Shluk 'c2' bude nezmenen.
+/**
+ * Do prvního shluku se přidají objekty z druhého shluku. A seřadí první shluk.
+ * @param c1 První shluk
+ * @param c2 Druhý shluk
  */
 void merge_clusters(struct cluster_t *c1, struct cluster_t *c2) {
     assert(c1 != NULL);
     assert(c2 != NULL);
-
-    // TODO
+    int origSize = c1->size;
+    int newSize = c1->size + c2->size;
+    if (c1->capacity < newSize) {
+        *c1 = *resize_cluster(c1, newSize);
+    }
+    for (int i = origSize; i < newSize; i++) {
+        c1->obj[i] = c2->obj[newSize - i];
+    }
+    sort_cluster(c1);
 }
 
 /**********************************************************************/
@@ -158,19 +177,26 @@ int remove_cluster(struct cluster_t *carr, int narr, int idx) {
     // TODO
 }
 
-/*
- Pocita Euklidovskou vzdalenost mezi dvema objekty.
+/**
+ * Počítá Euklidovskou vzdálenost mezi dvěma objekty
+ * @param o1 První objekt
+ * @param o2 Druhý objekt
+ * @return Euklidovská vzdálenost mezi dvěma objekty
  */
 float obj_distance(struct obj_t *o1, struct obj_t *o2) {
     assert(o1 != NULL);
     assert(o2 != NULL);
-
-    // TODO
+    float newX = o1->x - o2->x;
+    float newY = o1->y - o2->y;
+    return sqrtf((newX * newX) + (newY * newY));
 }
 
-/*
- Pocita vzdalenost dvou shluku.
-*/
+/**
+ * Počítá vzdálenost dvou shluků
+ * @param c1 První shluk
+ * @param c2 Druhý shluk
+ * @return Vzálenost dvou shluků
+ */
 float cluster_distance(struct cluster_t *c1, struct cluster_t *c2) {
     assert(c1 != NULL);
     assert(c1->size > 0);
@@ -192,29 +218,37 @@ void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2) {
     // TODO
 }
 
-// pomocna funkce pro razeni shluku
+/**
+ * Pomocná funkce pro řazení shluku
+ * @param a
+ * @param b
+ * @return
+ */
 static int obj_sort_compar(const void *a, const void *b) {
-    // TUTO FUNKCI NEMENTE
     const struct obj_t *o1 = (const struct obj_t *) a;
     const struct obj_t *o2 = (const struct obj_t *) b;
-    if (o1->id < o2->id) return -1;
-    if (o1->id > o2->id) return 1;
+    if (o1->id < o2->id) {
+        return -1;
+    }
+    if (o1->id > o2->id) {
+        return 1;
+    }
     return 0;
 }
 
-/*
- Razeni objektu ve shluku vzestupne podle jejich identifikatoru.
-*/
+/**
+ * Seřadí objekty ve shluku podle jejich ID
+ * @param c Shluk
+ */
 void sort_cluster(struct cluster_t *c) {
-    // TUTO FUNKCI NEMENTE
     qsort(c->obj, c->size, sizeof(struct obj_t), &obj_sort_compar);
 }
 
-/*
- Tisk shluku 'c' na stdout.
-*/
+/**
+ * Vytiskne skluk
+ * @param c Shluk
+ */
 void print_cluster(struct cluster_t *c) {
-    // TUTO FUNKCI NEMENTE
     for (int i = 0; i < c->size; i++) {
         if (i) putchar(' ');
         printf("%d[%g,%g]", c->obj[i].id, c->obj[i].x, c->obj[i].y);
@@ -235,10 +269,11 @@ int load_clusters(char *filename, struct cluster_t **arr) {
     // TODO
 }
 
-/*
- Tisk pole shluku. Parametr 'carr' je ukazatel na prvni polozku (shluk).
- Tiskne se prvnich 'narr' shluku.
-*/
+/**
+ * Tiskne pole shluků
+ * @param carr Ukazatel na první shluk
+ * @param narr POčet vytištěných shluků
+ */
 void print_clusters(struct cluster_t *carr, int narr) {
     printf("Clusters:\n");
     for (int i = 0; i < narr; i++) {
@@ -247,8 +282,20 @@ void print_clusters(struct cluster_t *carr, int narr) {
     }
 }
 
+/**
+ * Vypíše použití programu
+ */
+void print_usage() {
+    puts("Usage: ./proj3 filename [N]");
+    puts("Options:");
+    puts("\tN\t\tFinal count of clusters.");
+}
+
 int main(int argc, char *argv[]) {
     struct cluster_t *clusters;
-
-    // TODO
+    if (argc != 2 && argc != 3) {
+        print_usage();
+        return 0;
+    }
+    return 0;
 }
