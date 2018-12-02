@@ -38,7 +38,33 @@
 | 0.05       | ok     | reakce na napovedu      |
 | 0.1        | ok     | chybny prikaz v souboru |
 
-### [Druhý projekt](https://wis.fit.vutbr.cz/FIT/st/cwk.php?title=Projekt2&csid=681530&id=12816) (/7,0)
+### [Druhý projekt](https://wis.fit.vutbr.cz/FIT/st/cwk.php?title=Projekt2&csid=681530&id=12816) (6,9/7,0)
+
+| Počet bodů | Stav   | Popis                                                       |
+| :--------: | :----: | ----------------------------------------------------------- |
+| 3.5        |        | hodnoceni obhajoby                                          |
+| 0.3        | ok     | prime volani funkce taylor_log pro x=0.5,1,2 a n=1,2,10     |
+| 0.3        | ok     | prime volani funkce cfrac_log pro x=0.5,1,2 a n=1,2,10      |
+| 0.3        | ok     | --log 1.131401114526 40                                     |
+| 0.2        | ok     | --log 1.0 40                                                |
+| 0.2        | ok     | --log 1e-6 40                                               |
+| 0.2        | ok     | --log 1e+6 40                                               |
+| 0.0875     | ok     | --log 0.0 5                                                 |
+| 0.0875     | ok     | --log inf 5                                                 |
+| 0.3        | ok     | prime volani funkce taylor_pow pro x,y=0.5,1,2 a n=1,2,10   |
+| 0.3        | ok     | prime volani funkce taylorcf_pow pro x,y=0.5,1,2 a n=1,2,10 |
+| 0.3        | ok     | --pow 1.23 4.2 40                                           |
+| 0.2        | ok     | --pow 1.0 1.0 40                                            |
+| 0          | spatne | --pow 1e-6 4.2 40                                           |
+| 0.2        | ok     | snizena presnost                                            |
+| 0.2        | ok     | --pow 1e+6 4.2e1 40                                         |
+| 0.0875     | ok     | --pow inf 1.0 4                                             |
+| 0.0875     | ok     | --pow 1.1 inf 4                                             |
+| 0          | chyba  | reakce na neocekavany argument                              |
+| 0          | chyba  | reakce na nekompletni argumenty                             |
+| 0.05       | ok     | reakce na chybne argumenty                                  |
+
+### [Druhý projekt](https://wis.fit.vutbr.cz/FIT/st/cwk.php?id=12816&csid=681530) (/10,0)
 
 
 ## Licence
