@@ -64,8 +64,43 @@
 | 0          | chyba  | reakce na nekompletni argumenty                             |
 | 0.05       | ok     | reakce na chybne argumenty                                  |
 
-### [Druhý projekt](https://wis.fit.vutbr.cz/FIT/st/cwk.php?id=12816&csid=681530) (/10,0)
+### [Třetí projekt](https://wis.fit.vutbr.cz/FIT/st/cwk.php?title=Projekt3&csid=681530&id=12816) (9,6/10,0)
 
+| Počet bodů | Stav    | Popis                                                    |
+| :--------: | :-----: | -------------------------------------------------------- |
+| 5          |         | hodnocení obhajoby                                       |
+| 0          |         | Neznamene identifikatory (globalni promenne nebo funkce) |
+| 0.65       | ok      | nacteni a vypis jedineho shluku                          |
+| 0.65       | ok      | nacteni a vypis 20 shluku                                |
+| 0.6        | ok      | jedna iterace shlukovani nad dvema objekty               |
+| 0.6        | ok      | jedna iterace shlukovani nad 20 objekty                  |
+| 0.3        | ok      | 10 shluku                                                |
+| 0.3        | ok      | 7 shluku                                                 |
+| 0.3        | ok      | 3 shluky                                                 |
+| 1          |         | absence pametovych chyb                                  |
+| 0.1        | ok      | reakce na neexistujici soubor                            |
+| 0          | chyba   | reakce na spatny obsah souboru 1                         |
+| 0          | chyba   | reakce na spatny obsah souboru 2                         |
+| 0          | chyba   | reakce na chybejici argumenty                            |
+| 0.1        | ok      | reakce na spatny 2. argument                             |
+| 0          | timeout | program nasilne ukoncen (zacykleni nebo cekani)          |
+| 0          | chyba   | reakce na spatny pocet cilovych shluku                   |
+
+### [Dokumentace](https://wis.fit.vutbr.cz/FIT/st/cwk.php?title=Projekt4&csid=681530&id=12816) (3,4/4,0)
+
+| Počet bodů | Popis                                          |
+| :--------: | ---------------------------------------------- |
+| 0.0        | dokumentace popisu pomoci brief/desc (0)       |
+| 0.3        | dokumentace navratovych hodnot (9)             |
+| 0.7        | dokumentace parametru funkci (40)              |
+| 0.1        | dokumentace predpokladu funkce (13)            |
+| 0.0        | dokumentace dusledku funkce (0)                |
+| 0.1        | popis obj_t ok                                 |
+| 0.3        | popis clenu struktury obj_t ok                 |
+| 0.1        | popis cluster_t ok                             |
+| 0.3        | popis clenu struktury cluster_t ok             |
+| 0.6        | dokumentace skupin volani (5)                  |
+| 0.9        | dokumentace funkci podle vysledku doxygen (17) |
 
 ## Licence
 
